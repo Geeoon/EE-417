@@ -5,7 +5,7 @@ from receiver import receiver
 from transmitter import transmitter
 from truncate_add_noise_real import truncate_add_noise_real
 
-def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray) -> float:
+def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: int=1) -> float:
     """
     Calculates the proportion of elements that are not the same in both input arrays
     
@@ -13,12 +13,15 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray) -> float:
     :type truth: np.ndarray
     :param test: the second array to compare
     :type test: np.ndarray
+    :param bits_per_symbol: the number of bits per symbol
+    :type bits_per_symbol: int
 
-    :return: the bit error rate [0, 1]  // should this be symbol error rate for when there are multiple bits?
+    :return: the bit error rate [0, 1]
     :rtype: float
     """
+    assert(bits_per_symbol > 0)
     assert(len(arr1) == len(arr2))
-    return np.count_nonzero(arr1 - arr2) / len(arr1)
+    return np.sum(np.bitwise_count(arr1 - arr2)) / (len(arr1) * bits_per_symbol)
 
 
 bits_per_symbol = 1
@@ -47,12 +50,12 @@ print("Received signal:", received_signal)
 # average the samples for each symbol
 final_output = np.rint(received_signal.reshape(-1, symbol_size).mean(axis=1)).astype(np.int64)
 print("Final output:", final_output)
-print("Erorr rate:", calculate_error_rate(test_input, final_output))
+print("Bit error rate:", calculate_error_rate(test_input, final_output))
 
 
 # EXTRA CREDIT
 # part i
-snrs = range(10, 31, 1)
+snrs = range(-10, 31, 1)
 errs = []
 bits_per_symbol = 1
 symbol_size = 10
@@ -65,9 +68,9 @@ for test_snr in snrs:
     received_signal = receiver(noisy_output, bits_per_symbol=bits_per_symbol)
     final_output = np.rint(received_signal.reshape(-1, symbol_size).mean(axis=1)).astype(np.int64)
     errs.append(calculate_error_rate(test_input, final_output))
-plt.title(f"Error Rates for Various SNRs (Symbol Size = {symbol_size} Samples, Bits Per Symbol = {bits_per_symbol})")
+plt.title(f"SNR vs. BER (Symbol Size = {symbol_size} Samples, Bits Per Symbol = {bits_per_symbol})")
 plt.xlabel("SNR (dB)")
-plt.ylabel("Error Rate")
+plt.ylabel("Bit Error Rate (BER)")
 plt.plot(snrs, errs)
 plt.show()
 
@@ -85,9 +88,9 @@ for test_snr in snrs:
     received_signal = receiver(noisy_output, bits_per_symbol=bits_per_symbol)
     final_output = np.rint(received_signal.reshape(-1, symbol_size).mean(axis=1)).astype(np.int64)
     errs.append(calculate_error_rate(test_input, final_output))
-plt.title(f"Error Rates for Various SNRs (Symbol Size = {symbol_size} Samples, Bits Per Symbol = {bits_per_symbol})")
+plt.title(f"SNR vs. BER (Symbol Size = {symbol_size} Samples, Bits Per Symbol = {bits_per_symbol})")
 plt.xlabel("SNR (dB)")
-plt.ylabel("Error Rate")
+plt.ylabel("Bit Error Rate (BER)")
 plt.plot(snrs, errs)
 plt.show()
 
@@ -104,15 +107,15 @@ for test_snr in snrs:
     noisy_output = truncate_add_noise_real(transmitter_output, snr)
     received_signal = receiver(noisy_output, bits_per_symbol=bits_per_symbol)
     final_output = np.rint(received_signal.reshape(-1, symbol_size).mean(axis=1)).astype(np.int64)
-    errs.append(calculate_error_rate(test_input, final_output))
-plt.title(f"Error Rates for Various SNRs (Symbol Size = {symbol_size} Samples, Bits Per Symbol = {bits_per_symbol})")
+    errs.append(calculate_error_rate(test_input, final_output, bits_per_symbol=bits_per_symbol))
+plt.title(f"SNR vs. BER (Symbol Size = {symbol_size} Samples, Bits Per Symbol = {bits_per_symbol})")
 plt.xlabel("SNR (dB)")
-plt.ylabel("Error Rate")
+plt.ylabel("Bit Error Rate (BER)")
 plt.plot(snrs, errs)
 plt.show()
 
 # part iv
 """
 The best way to increase throughput of the system is to decrease the signal to noise ratio.  This means higher ampltiude signals transmitted.  Another option is to increase the sample rate AND the symbol size.
-If error rate is the only concern, you can increase the symbol size without increasing sample rate.
+If bit error rate is the only concern, you can increase the symbol size without increasing sample rate.
 """
