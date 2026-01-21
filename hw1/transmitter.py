@@ -1,3 +1,6 @@
+# Geeoon Chung and Atharv Dixit
+# EE 417 Winter 2026
+
 import numpy as np
 
 def transmitter(input_signal: np.ndarray, symbol_size: int=10, bits_per_symbol: int=1, amplitude: float=2.0) -> np.ndarray:

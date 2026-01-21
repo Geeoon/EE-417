@@ -1,3 +1,6 @@
+# Geeoon Chung and Atharv Dixit
+# EE 417 Winter 2026
+
 import matplotlib.pyplot as plt
 import numpy as np
 
