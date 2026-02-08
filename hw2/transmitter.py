@@ -49,7 +49,7 @@ def transmitter(input_signal: np.ndarray, symbol_size: int=10, bits_per_symbol: 
     """
     So the output looks as such
     bits 0-7: preamble
-    bits 8-39: total length
+    bits 8-39: total length in symbols
     bits 40-71: x-dimension
     bits 72-103: y-dimension
     bits 104-end: image data
