@@ -40,21 +40,28 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, bits_per_symbol: int=1, am
 
     # find preamble index
     # convolve signal
-    convolved = np.convolve(recvd, preamble, mode='valid')
+    convolved = np.convolve(recvd, preamble[::-1], mode='valid')
     # find index of max
-    index = np.argmax(convolved)
+    # first occurance above 95% match with preamble, based on correlation
+    correlation = np.sum(preamble ** 2)
+    indices = np.where(convolved > correlation * .95)[0]
+    if len(indices) == 0:
+        index = np.argmax(convolved)
+    else:
+        index = indices[0]
 
     # convert symbol to value
     out = np.rint(((recvd + amplitude / 2) / amplitude) * ((2 ** bits_per_symbol) - 1))
     
     # parse x and y
-    out = out[index+len(preamble)+3:]
+    out = out[index+len(preamble):]
     x = bits_to_val(out[:16])
     y = bits_to_val(out[16:32])
     out = out[32:]
 
     # return reconstructed image
-    assert len(out) >= x * y
+    if (x < 1 or y < 1) or (len(out) < x * y):
+        return None, index
     out = out[:x*y].astype(np.uint8)
     out = out.reshape((x, y))
-    return out
+    return out, index

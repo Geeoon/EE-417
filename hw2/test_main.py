@@ -9,24 +9,6 @@ from transmitter import transmitter
 from truncate_add_noise_real import truncate_add_noise_real
 from image_to_bits import image_to_bits
 
-def find_preamble(input: np.ndarray, preamble: np.ndarray, ) -> int:
-    """
-    Finds the preamble in a received signal
-    
-    :param input: the signal to search for
-    :type input: np.ndarray
-    :param preamble: the preamble to search for
-    :type preamble: np.ndarray
-    :return: the index of the start of the preamble, or -1 if not found
-    :rtype: int
-    """
-    assert len(input) >= len(preamble), "Preamble cannot be longer than the input"
-    windows = np.lib.stride_tricks.sliding_window_view(input, len(preamble))
-    matches = np.all(windows == preamble, axis=1)
-
-    assert len(np.where(matches)[0]) > 0
-    return np.where(matches)[0][0]
-
 def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: int=1) -> float:
     """
     Calculates the proportion of elements that are not the same in both input arrays
@@ -42,13 +24,13 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
     :rtype: float
     """
     assert(bits_per_symbol > 0)
-    assert(len(arr1) == len(arr2))
-    return np.sum(np.bitwise_count(arr1 - arr2)) / (len(arr1) * bits_per_symbol)
+    assert(arr1.shape == arr2.shape)
+    return np.sum(np.bitwise_count(arr1 - arr2)) / (arr1.size * bits_per_symbol)
 
-PREAMBLE = np.array((1, 0, 1, 0, 1, 1, 1, 1) * 10)
+PREAMBLE = np.array((1, 0, 1, 0, 1, 1, 1, 1) * 1)
 bits_per_symbol = 1
 symbol_size = 1
-snr = 20  # in dB
+snr = 100  # in dB
 sample_size = int(1e6) // symbol_size
 
 # get image
@@ -71,74 +53,65 @@ noisy_output = truncate_add_noise_real(signal, snr)
 print("Noisy signal:", noisy_output)
 
 # receive signal
-received_signal = receiver(noisy_output, preamble=PREAMBLE, bits_per_symbol=bits_per_symbol)
+received_signal, index = receiver(noisy_output, preamble=PREAMBLE, bits_per_symbol=bits_per_symbol)
+if index != r:
+    print("Preamble not identified correctly")
+if received_signal is None:
+    print("Unable to display image")
+
 print("Received signal:", received_signal)
 
 plt.imshow(test_input, cmap='gray', vmin=0, vmax=1)
 plt.title("Original Signal")
 plt.show()
 
-plt.imshow(received_signal, cmap='gray', vmin=0, vmax=1)
-plt.title("Received Signal")
+if received_signal is not None:
+    plt.imshow(received_signal, cmap='gray', vmin=0, vmax=1)
+    plt.title("Received Signal")
+    plt.show()
+    print("Error rate:", calculate_error_rate(test_input, received_signal))
+
+
+snrs = range(-10, 21, 1)
+det_rates = []
+dec_rates = []
+for test_snr in snrs:
+    print(f"Starting with SNR = {test_snr}")
+    detected = 100
+    decoded = 100
+    for _ in range(100):
+        # add zeros before and after data
+        r = round(np.random.rand() * 9e5)
+        signal = np.concatenate((np.zeros(r), transmitter_output, np.zeros(int(9e5-r))))
+        noisy_output = truncate_add_noise_real(signal, test_snr)
+        received_signal, index = receiver(noisy_output, preamble=PREAMBLE, bits_per_symbol=bits_per_symbol)
+        if index != r:
+            print("index wrong")
+            print(index, r)
+            detected -= 1
+            decoded -= 1
+            continue
+        if received_signal is None:
+            decoded -= 1
+            continue
+        if test_input.shape != received_signal.shape:
+            decoded -= 1
+            continue
+        if calculate_error_rate(test_input, received_signal) != 0:
+            decoded -= 1
+    det_rates.append(detected / 100)
+    dec_rates.append(decoded / 100)
+
+plt.title(f"SNR vs. Error Rates")
+plt.xlabel("SNR (dB)")
+plt.ylabel("Rate")
+plt.plot(snrs, det_rates, label="Detecting Rate")
+plt.plot(snrs, dec_rates, label="Decoding Rate")
+plt.legend()
 plt.show()
-# EXTRA CREDIT
-# part i
-# snrs = range(-10, 31, 1)
-# errs = []
-# bits_per_symbol = 1
-# symbol_size = 10
-# sample_size = int(1e6) // symbol_size
-# for test_snr in snrs:
-#     snr = test_snr
-#     test_input = rng.integers(low=0, high=2**bits_per_symbol, size=sample_size)
-#     transmitter_output = transmitter(test_input, bits_per_symbol=bits_per_symbol, symbol_size=symbol_size)
-#     noisy_output = truncate_add_noise_real(transmitter_output, snr)
-#     received_signal = receiver(noisy_output, bits_per_symbol=bits_per_symbol)
-#     final_output = np.rint(received_signal.reshape(-1, symbol_size).mean(axis=1)).astype(np.int64)
-#     errs.append(calculate_error_rate(test_input, final_output))
-# plt.title(f"SNR vs. BER (Symbol Size = {symbol_size} Samples, Bits Per Symbol = {bits_per_symbol})")
-# plt.xlabel("SNR (dB)")
-# plt.ylabel("Bit Error Rate (BER)")
-# plt.plot(snrs, errs)
-# plt.show()
 
-# part ii
-# snrs = range(-10, 31, 1)
-# errs = []
-# bits_per_symbol = 1
-# symbol_size = 5
-# sample_size = int(1e6) // symbol_size
-# for test_snr in snrs:
-#     snr = test_snr
-#     test_input = rng.integers(low=0, high=2**bits_per_symbol, size=sample_size)
-#     transmitter_output = transmitter(test_input, bits_per_symbol=bits_per_symbol, symbol_size=symbol_size)
-#     noisy_output = truncate_add_noise_real(transmitter_output, snr)
-#     received_signal = receiver(noisy_output, bits_per_symbol=bits_per_symbol)
-#     final_output = np.rint(received_signal.reshape(-1, symbol_size).mean(axis=1)).astype(np.int64)
-#     errs.append(calculate_error_rate(test_input, final_output))
-# plt.title(f"SNR vs. BER (Symbol Size = {symbol_size} Samples, Bits Per Symbol = {bits_per_symbol})")
-# plt.xlabel("SNR (dB)")
-# plt.ylabel("Bit Error Rate (BER)")
-# plt.plot(snrs, errs)
-# plt.show()
-
-# part iii
-# snrs = range(-10, 31, 1)
-# errs = []
-# bits_per_symbol = 2
-# symbol_size = 10
-# sample_size = int(1e6) // symbol_size
-# for test_snr in snrs:
-#     snr = test_snr
-#     test_input = rng.integers(low=0, high=2**bits_per_symbol, size=sample_size)
-#     transmitter_output = transmitter(test_input, bits_per_symbol=bits_per_symbol, symbol_size=symbol_size)
-#     noisy_output = truncate_add_noise_real(transmitter_output, snr)
-#     received_signal = receiver(noisy_output, bits_per_symbol=bits_per_symbol)
-#     final_output = np.rint(received_signal.reshape(-1, symbol_size).mean(axis=1)).astype(np.int64)
-#     errs.append(calculate_error_rate(test_input, final_output, bits_per_symbol=bits_per_symbol))
-# plt.title(f"SNR vs. BER (Symbol Size = {symbol_size} Samples, Bits Per Symbol = {bits_per_symbol})")
-# plt.xlabel("SNR (dB)")
-# plt.ylabel("Bit Error Rate (BER)")
-# plt.plot(snrs, errs)
-# plt.show()
-
+"""
+iii) The difference is about 8dB.  This exists because if you do not decode the preamble correctly, you cannot decode the rest of the message correcly.
+No necessarily, there will be a difference.  Addiitionally, if you can get the preamble correct, you are still not garunteed to get the rest of the message correct.
+The preamble only represents a very small part of the bits that could possibly have errors.
+"""
