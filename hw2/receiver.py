@@ -57,5 +57,4 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, bits_per_symbol: int=1, am
     assert len(out) >= x * y
     out = out[:x*y].astype(np.uint8)
     out = out.reshape((x, y))
-    print(out.shape)
     return out

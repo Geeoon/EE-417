@@ -39,7 +39,8 @@ def transmitter(input_signal: np.ndarray, preamble: np.ndarray = (1, 0, 1, 0, 1,
                                    input_signal.flatten()])
     input_signal = np.concatenate([preamble, input_signal])  # add preamble
     # pad with zeros
-    input_signal = np.concatenate((input_signal, (0,) * int(1e5 - len(input_signal))))
+    assert len(input_signal) < int(1e5), "Image too large"
+    input_signal = np.concatenate((input_signal, np.zeros(int(1e5 - len(input_signal)))))
     out = (input_signal * (amplitude / ((2 ** bits_per_symbol) - 1))) - amplitude / 2
     out = np.repeat(out, symbol_size)
     
@@ -55,8 +56,3 @@ def transmitter(input_signal: np.ndarray, preamble: np.ndarray = (1, 0, 1, 0, 1,
     rest of bits are padded zero
     """
     return out[:int(1e5)]  # cut off any extra values
-
-# from image_to_bits import image_to_bits
-# im = image_to_bits('./photos/monalisa_diff.png')
-# out = transmitter(im, bits_per_symbol=1, symbol_size=1)
-# print(out)
