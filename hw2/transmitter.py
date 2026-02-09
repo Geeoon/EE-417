@@ -8,11 +8,12 @@ def to_symbol(val: int, bits_per_symbol: int=1, out_len: int=16) -> np.ndarray:
     assert val >= 0, "can't convert negative numbers"
     out = np.array([])
     while val:
-        out = np.append(out, val % (2 ** bits_per_symbol))
+        out = np.append(val % (2 ** bits_per_symbol), out)
         val >>= bits_per_symbol
-    return np.concatenate([[0] * (out_len - len(out)), out]).astype(np.uint8)
+    out = np.concatenate([[0] * (out_len - len(out)), out]).astype(np.uint8)
+    return out
 
-def transmitter(input_signal: np.ndarray, symbol_size: int=10, bits_per_symbol: int=1, amplitude: float=2.0) -> np.ndarray:
+def transmitter(input_signal: np.ndarray, preamble: np.ndarray = (1, 0, 1, 0, 1, 1, 1, 1), symbol_size: int=10, bits_per_symbol: int=1, amplitude: float=2.0) -> np.ndarray:
     """
     Converts a series of bits for transmission.
 
@@ -33,11 +34,10 @@ def transmitter(input_signal: np.ndarray, symbol_size: int=10, bits_per_symbol: 
     assert amplitude >= 1
     assert np.max(input_signal) == 1 or np.max(input_signal) == 0  # make sure it's a 1 bit stream
     # add length and x, y dimensions to front of message
-    input_signal = np.concatenate([to_symbol(len(input_signal), bits_per_symbol=bits_per_symbol),
-                                   to_symbol(input_signal.shape[0], bits_per_symbol=bits_per_symbol),
+    input_signal = np.concatenate([to_symbol(input_signal.shape[0], bits_per_symbol=bits_per_symbol),
                                    to_symbol(input_signal.shape[1], bits_per_symbol=bits_per_symbol),
                                    input_signal.flatten()])
-    input_signal = np.concatenate([(1, 0, 1, 0, 1, 1, 1, 1), input_signal])  # add preamble
+    input_signal = np.concatenate([preamble, input_signal])  # add preamble
     # pad with zeros
     input_signal = np.concatenate((input_signal, (0,) * int(1e5 - len(input_signal))))
     out = (input_signal * (amplitude / ((2 ** bits_per_symbol) - 1))) - amplitude / 2
@@ -48,11 +48,10 @@ def transmitter(input_signal: np.ndarray, symbol_size: int=10, bits_per_symbol: 
     
     """
     So the output looks as such
-    bits 0-7: preamble
-    bits 8-39: total length in symbols
-    bits 40-71: x-dimension
-    bits 72-103: y-dimension
-    bits 104-end: image data
+    bits start-0: preamble
+    bits 0-15: x-dimension
+    bits 16-31: y-dimension
+    bits 32-end: image data
     rest of bits are padded zero
     """
     return out[:int(1e5)]  # cut off any extra values

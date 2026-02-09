@@ -9,6 +9,24 @@ from transmitter import transmitter
 from truncate_add_noise_real import truncate_add_noise_real
 from image_to_bits import image_to_bits
 
+def find_preamble(input: np.ndarray, preamble: np.ndarray, ) -> int:
+    """
+    Finds the preamble in a received signal
+    
+    :param input: the signal to search for
+    :type input: np.ndarray
+    :param preamble: the preamble to search for
+    :type preamble: np.ndarray
+    :return: the index of the start of the preamble, or -1 if not found
+    :rtype: int
+    """
+    assert len(input) >= len(preamble), "Preamble cannot be longer than the input"
+    windows = np.lib.stride_tricks.sliding_window_view(input, len(preamble))
+    matches = np.all(windows == preamble, axis=1)
+
+    assert len(np.where(matches)[0]) > 0
+    return np.where(matches)[0][0]
+
 def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: int=1) -> float:
     """
     Calculates the proportion of elements that are not the same in both input arrays
@@ -27,7 +45,7 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
     assert(len(arr1) == len(arr2))
     return np.sum(np.bitwise_count(arr1 - arr2)) / (len(arr1) * bits_per_symbol)
 
-
+PREAMBLE = np.array((1, 0, 1, 0, 1, 1, 1, 1) * 10)
 bits_per_symbol = 1
 symbol_size = 1
 snr = 20  # in dB
@@ -38,7 +56,7 @@ test_input = image_to_bits('./photos/monalisa_diff.png')
 print("Input image:", test_input)
 
 # transform image
-transmitter_output = transmitter(test_input, symbol_size=symbol_size, bits_per_symbol=bits_per_symbol)
+transmitter_output = transmitter(test_input, preamble=PREAMBLE, symbol_size=symbol_size, bits_per_symbol=bits_per_symbol)
 print("Transformer output:", transmitter_output)
 # add zeros before and after data
 r = round(np.random.rand() * 9e5)
@@ -53,18 +71,16 @@ noisy_output = truncate_add_noise_real(signal, snr)
 print("Noisy signal:", noisy_output)
 
 # receive signal
-received_signal = receiver(noisy_output, bits_per_symbol=bits_per_symbol)
+received_signal = receiver(noisy_output, preamble=PREAMBLE, bits_per_symbol=bits_per_symbol)
 print("Received signal:", received_signal)
 
-quit()
+plt.imshow(test_input, cmap='gray', vmin=0, vmax=1)
+plt.title("Original Signal")
+plt.show()
 
-# interpret signal
-# average the samples for each symbol
-# final_output = np.rint(received_signal.reshape(-1, symbol_size).mean(axis=1)).astype(np.int64)
-# print("Final output:", final_output)
-# print("Bit error rate:", calculate_error_rate(test_input, final_output))
-
-
+plt.imshow(received_signal, cmap='gray', vmin=0, vmax=1)
+plt.title("Received Signal")
+plt.show()
 # EXTRA CREDIT
 # part i
 # snrs = range(-10, 31, 1)
