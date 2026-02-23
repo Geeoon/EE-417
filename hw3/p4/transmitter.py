@@ -33,6 +33,8 @@ def transmitter(input_signal: np.ndarray, preamble: np.ndarray = (1, 0, 1, 0, 1,
     assert bits_per_symbol >= 1
     assert np.max(input_signal) == 1 or np.max(input_signal) == 0  # make sure it's a 1 bit stream
     # add length and x, y dimensions to front of message
+    print("X, before:", to_symbol(input_signal.shape[0], bits_per_symbol=bits_per_symbol))
+    print("Y, before:", to_symbol(input_signal.shape[1], bits_per_symbol=bits_per_symbol))
     input_signal = np.concatenate([to_symbol(input_signal.shape[0], bits_per_symbol=bits_per_symbol),
                                    to_symbol(input_signal.shape[1], bits_per_symbol=bits_per_symbol),
                                    input_signal.flatten()])

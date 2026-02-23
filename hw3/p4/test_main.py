@@ -28,7 +28,7 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
     assert(arr1.shape == arr2.shape)
     return np.sum(np.bitwise_count(arr1 - arr2)) / (arr1.size * bits_per_symbol)
 
-PREAMBLE = np.array((1, 0, 1, 0, 1, 1, 1, 1) * 1)
+PREAMBLE = np.array((1, 0, 1, 0, 1, 1, 1, 1) * 4)
 bits_per_symbol = 1
 symbol_size = 1
 snr = 100  # in dB
@@ -63,8 +63,6 @@ if index != r:
 if received_signal is None:
     print("Unable to display image")
     
-quit()
-
 # print("Received signal:", received_signal)
 
 plt.imshow(test_input, cmap='gray', vmin=0, vmax=1)
@@ -76,7 +74,6 @@ if received_signal is not None:
     # plt.title("Received Signal")
     plt.show()
     print("Error rate:", calculate_error_rate(test_input, received_signal))
-
 
 snrs = range(-10, 21, 1)
 det_rates = []

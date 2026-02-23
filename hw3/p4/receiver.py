@@ -41,7 +41,6 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, bits_per_symbol: int=1, am
     preamble_symbols = bit_to_symbol(np.repeat(preamble, symbol_size))
     # find preamble index
     # convolve signal
-    # TODO: pass repeatitions later
     convolved = np.correlate(recvd, preamble_symbols, mode='valid')
     # find index of max
     # first occurance above 97.5% match with preamble, based on correlation
@@ -57,15 +56,12 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, bits_per_symbol: int=1, am
     out = symbol_detector_to_bits(recvd)
     
     # parse x and y
-    print("preamble:", out[index*4:(index*4)+len(preamble) * 4])
-    print("'x'", out[index*4+len(preamble):index*4+len(preamble) + 16])
     out = out[index*4+len(preamble):]
     x = bits_to_val(out[:16])
     y = bits_to_val(out[16:32])
-    out = out[32:]
-    
     print("x:", x, out[:16])
     print("y:", y, out[16:32])
+    out = out[32:]
 
     # return reconstructed image
     if (x < 1 or y < 1) or (len(out) < x * y):

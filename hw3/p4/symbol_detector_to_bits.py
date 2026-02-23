@@ -1,35 +1,19 @@
 import numpy as np
+from bit_to_symbol import bit_to_symbol
+from transmitter import to_symbol
 
 def symbol_detector_to_bits(symbols: np.ndarray, d: float = 1) -> np.ndarray:
     num_bits = len(symbols) * 4
     
-    bits = np.empty(num_bits)
+    out = np.empty(num_bits)
+
+    diffs = []
+    for i in range(16):
+        sym_arr = np.tile(bit_to_symbol(to_symbol(i, out_len=4)), len(symbols))
+        diffs.append(np.abs(sym_arr - symbols))
     
-    for i in range(len(symbols)):
-        curr = symbols[i]
-        curr_real = np.real(curr)
-        curr_imag = np.imag(curr)
-        
-        if curr_real > 0:
-            dist_11 = abs(curr_real - 0.5 * d)
-            dist_10 = abs(curr_real - 1.5 * d)
-            
-            bits[i * 4: i * 4 + 2] = [1, 1] if (dist_11 <= dist_10) else [1, 0]
-        else:
-            dist_00 = abs(curr_real + 0.5 * d)
-            dist_01 = abs(curr_real + 1.5 * d)
-            
-            bits[i * 4: i * 4 + 2] = [0, 0] if (dist_00 <= dist_01) else [0, 1]
-                
-        if curr_imag > 0:
-            dist_11 = abs(curr_imag - 0.5 * d)
-            dist_10 = abs(curr_imag - 1.5 * d)
-            
-            bits[i * 4 + 2: i * 4 + 4] = [1, 1] if (dist_11 <= dist_10) else [1, 0]
-        else:
-            dist_00 = abs(curr_imag + 1.5 * d)
-            dist_01 = abs(curr_imag + 0.5 * d)
-            
-            bits[i * 4 + 2: i * 4 + 4] = [0, 0] if (dist_00 <= dist_01) else [0, 1]
-    
-    return bits
+    # find minimum for each index
+    arg_mins = np.argmin(diffs, axis=0)
+    for i, min in enumerate(arg_mins):
+        out[i*4 : i*4+4] = to_symbol(min, out_len=4) // 1
+    return out
