@@ -70,6 +70,6 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, bits_per_symbol: int=1, am
     if (x < 1 or y < 1) or (len(out) < x * y):
         return None, index
     out = out[:x*y].astype(np.uint8)
-    out = out.reshape((x, y))  
+    out = out.reshape((x, y))
     
     return out, index

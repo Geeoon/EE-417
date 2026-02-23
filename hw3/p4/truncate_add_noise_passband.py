@@ -18,7 +18,8 @@ def truncate_add_noise_passband(signal, SNR_dB):
     """
 
     # Normalize signal
-    signal = signal / np.max(np.abs(signal))
+    max_sgnl = np.max(np.abs(signal))
+    signal = signal / max_sgnl
 
     # Truncate to 1e6 samples
     N = int(1e6)
@@ -40,4 +41,6 @@ def truncate_add_noise_passband(signal, SNR_dB):
     added_noise = noise  # awgn(reference) - reference
     noisySignal = signal + added_noise
 
+    # unnormalize
+    noisySignal *= max_sgnl
     return noisySignal
