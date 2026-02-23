@@ -80,7 +80,7 @@ if received_signal is not None:
     plt.imshow(received_signal, cmap='gray', vmin=0, vmax=1)
     plt.show()
 
-N = 3
+N = 50
 snrs = range(0, 21, 2)
 
 q16_ber = []
@@ -130,7 +130,6 @@ for test_snr in snrs:
             ser += 1
             continue
         this_ber, this_ser = calculate_error_rate(test_input, received_signal)
-        print(this_ber, this_ser)
         if this_ber != 0:
             decoded -= 1
         ber += this_ber

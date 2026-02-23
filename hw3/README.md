@@ -1,4 +1,5 @@
 # Instructions to run
+### Geeoon Chung and Atharv Dixit
 1. Run `python3 -m pip install requirements.txt` to install dependencies.
 2. Run `python3 ./p4/test_main.py` to run the program.
 3. An example image and transmission is shown.
