@@ -30,9 +30,8 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
 
 PREAMBLE = np.array((1, 0, 1, 0, 1, 1, 1, 1) * 4)
 bits_per_symbol = 1
-symbol_size = 1
+symbol_size = 3
 snr = 100  # in dB
-sample_size = int(1e6) // symbol_size
 
 # get image
 test_input = image_to_bits('./photos/monalisa_diff.png')
@@ -57,7 +56,6 @@ print("Noisy signal:", noisy_output)
 # receive signal
 received_signal, index = receiver(noisy_output, preamble=PREAMBLE, bits_per_symbol=bits_per_symbol, symbol_size=symbol_size)
 
-print(index, " ", r)
 if index != r:
     print("Preamble not identified correctly")
 if received_signal is None:

@@ -38,7 +38,8 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, bits_per_symbol: int=1, am
     :rtype: ndarray
     """
     assert(bits_per_symbol >= 1)
-    preamble_symbols = bit_to_symbol(np.repeat(preamble, symbol_size))
+    preamble_symbols = np.repeat(bit_to_symbol(preamble), symbol_size)
+
     # find preamble index
     # convolve signal
     convolved = np.correlate(recvd, preamble_symbols, mode='valid')
@@ -52,15 +53,17 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, bits_per_symbol: int=1, am
     else:
         index = indices[0]
 
+    # soft decoding using average
+    avg_convolution = np.convolve(recvd[index+len(preamble_symbols):], (1/symbol_size,) * symbol_size, mode='full')
+    avg_convolution = avg_convolution[symbol_size-1:]
+    recvd = avg_convolution[::symbol_size]
+
     # convert symbol to value
     out = symbol_detector_to_bits(recvd)
     
     # parse x and y
-    out = out[index*4+len(preamble):]
     x = bits_to_val(out[:16])
     y = bits_to_val(out[16:32])
-    print("x:", x, out[:16])
-    print("y:", y, out[16:32])
     out = out[32:]
 
     # return reconstructed image
