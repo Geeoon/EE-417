@@ -4,12 +4,19 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from scipy import special as sp
+
 from receiver import receiver
 from transmitter import transmitter
 from truncate_add_noise_passband import truncate_add_noise_passband
 from image_to_bits import image_to_bits
 from symbol_detector_to_bits import symbol_detector_to_bits
 
+# thanks stack overflow for this one
+def q_function(snr):
+    value = np.sqrt(pow(10, snr / 10) / 5)
+    return 0.5 - 0.5*sp.erf(value/np.sqrt(2))
+    
 def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: int=1) -> float:
     """
     Calculates the proportion of elements that are not the same in both input arrays
@@ -75,10 +82,23 @@ if received_signal is not None:
 
 N = 3
 snrs = range(0, 21, 2)
+
+q16_ber = []
 det_rates = []
 dec_rates = []
 sers = []
 bers = []
+
+for snr in snrs:
+    value = 10 * np.log10(np.abs(q_function(snr)))
+    q16_ber.append(value)
+
+plt.plot(snrs, q16_ber)
+plt.title("16-qam ber vs. snr")
+plt.xlabel("snr (db)")
+plt.ylabel("ber (db)")
+plt.show()
+   
 for test_snr in snrs:
     print(f"Starting with SNR = {test_snr}")
     detected = N
