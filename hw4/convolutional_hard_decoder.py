@@ -21,12 +21,14 @@ def bits_to_val(bits: np.ndarray) -> int:
 
 def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o7]]) -> np.ndarray:
     num_inputs = len(G)
+    output_size = len(G[0])
     num_states = -1
     num_bits = -1
     for g in G:
         for val in g:
-            num_bits = max(num_bits, val.bit_count() - num_inputs)
+            num_bits = max(num_bits, val.bit_length() - 1)
     num_states = 2 ** num_bits
+    assert num_bits > 0, "G matrix malformed"
 
     # convert to bits
     bits = symbol_to_bit_mapper(symbols)
@@ -39,10 +41,16 @@ def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
 
     # for each input, calculate weights of previous states' transitions then find the weight of the current states
     for i in range(len(symbols)):  # for each of the new inputs
-        inputs = np.array(bits[i*2:i*2+num_inputs])
+        print(f"t = {i+1}")
+        inputs = np.array(bits[i*output_size:(i+1)*output_size])
+        print(inputs, bits_to_val(inputs))
         for j in range(len(transitions[-1])):  # for each previous state (index)
+            print(f"  for previous state {j}")
             for k in range(2 ** num_inputs):  # for each possible transition
+                print(f"    for the possible transition {k}")
                 # NOTE: this next line part is specific to hard decoding
+                # NOTE: there is a bug, we should be XORing with the expected encoded output, not just the input (k)
+                print(f"    has the weight {bits_to_val(inputs)} ^ {k} = {bits_to_val(inputs) ^ k}")
                 transitions[-1][j][k] = { "weight": (bits_to_val(inputs) ^ k).bit_count(), "next_state": ((j << num_inputs) | k) & (num_states - 1) }  # weight, number of 1 bits
         transitions.append([])
         for new_state in range(num_states):  # for each new state
@@ -55,14 +63,13 @@ def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
                         continue
                     # compute possible weight for the new state
                     contender_weight = transitions[-2][old_state]['state_weight'] + transitions[-2][old_state][transition]['weight']
-                    if lowest['weight'] > contender_weight:
+                    if lowest['weight'] >= contender_weight:
                         # found lower weight
                         lowest['state'] = old_state
                         lowest['weight'] = contender_weight
                         lowest['transition'] = transition
-            # assert lowest['state'] is not None, "Could not find an old state that points to the new state"
+            assert lowest['state'] is not None, "Could not find an old state that points to the new state"
             transitions[-1].append({ "state_weight": lowest['weight'], "previous": { "state": lowest['state'], "transition": lowest['transition'] } })
-    
 
     for i, transition in enumerate(transitions):
         print(f"t = {i}:")
@@ -78,7 +85,7 @@ def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
 
     return out
 
-test_encoding = convolution_encoder(np.array([0, 0, 0, 1, 1, 0, 1, 1], dtype=np.uint8))
+test_encoding = convolution_encoder(np.array([1], dtype=np.uint8))
 test_symbols = bit_to_symbol_mapper(test_encoding)
-# print(test_encoding, len(test_encoding), test_symbols)
+print(test_encoding)
 print(convolutional_hard_decoder(test_symbols))
