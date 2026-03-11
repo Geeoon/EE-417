@@ -15,7 +15,3 @@ def symbol_to_bit_mapper(symbols: np.ndarray, d: float = 1) -> np.ndarray:
     i_bits = symbols.real + (d/2)
     q_bits = symbols.imag + (d/2)
     return np.ravel(np.column_stack((i_bits, q_bits)))
-
-test_symbols = bit_to_symbol_mapper(np.array([0, 0, 0, 1, 1, 0, 1, 1], dtype=np.uint8))
-print(test_symbols)
-print(symbol_to_bit_mapper(test_symbols))

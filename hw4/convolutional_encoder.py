@@ -42,6 +42,4 @@ def convolution_encoder(input: np.ndarray, G: list[list[int]]=[[0o5, 0o7]], pad_
         for output in outputs:
             out[-1] = out[-1] + output[i]
         out[-1] %= 2
-    return out
-
-print(convolution_encoder(input=np.array([0, 1, 0, 1, 1, 0, 1], dtype=np.uint8)))
+    return np.array(out, dtype=np.uint8)
