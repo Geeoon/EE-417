@@ -17,7 +17,7 @@ def convolution_encoder(input: np.ndarray, G: list[list[int]]=[[0o5, 0o7]], pad_
     :param G: the G matrix to use
     :return: the coded bits
     """
-    assert input.dtype == np.uint8, "Input list must be uin8 type"
+    assert input.dtype == np.uint8, "Input list must be uint8 type"
     assert np.max(input) <= 1 and np.min(input) >= 0, "Input list must only contain 1s and 0s"
     if pad_ending:
         # find the number of states

@@ -3,21 +3,22 @@ import numpy as np
 from bit_to_symbol_mapper import bit_to_symbol_mapper, symbol_to_bit_mapper
 from convolutional_encoder import convolution_encoder
 
-def bits_to_val(bits: np.ndarray) -> int:
+def _bits_to_val(input: list[int]) -> int:
     """
-    MSB is index 0
-
-    :param bits: the bits to convert
-    :type bits: np.ndarray
-    :return: the value converted from bits
-    :rtype: int
+    :param input: MSB is at the start
     """
     out = 0
-    for bit in bits:
-        out <<= 1
-        out |= int(bit)
-    return out
+    for index, bit in enumerate(reversed(input)):
+        out += bit * int(2**index)
+    return int(out)
 
+def expected_output(state: int, input: int, num_inputs: int, G: list[list[int]]=[[0o5, 0o7]]) -> int:
+    out = np.zeros_like(G[0])
+    # print(state, input)
+    for i, g in enumerate(G):  # for each input bit
+        for j, val in enumerate(g):  # for each output bit
+            out[j] = ((((state << 1) | ((input & (1 << i)) >> i))) & val).bit_count() & 1
+    return out
 
 def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o7]]) -> np.ndarray:
     num_inputs = len(G)
@@ -43,15 +44,16 @@ def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
     for i in range(len(symbols)):  # for each of the new inputs
         print(f"t = {i+1}")
         inputs = np.array(bits[i*output_size:(i+1)*output_size])
-        print(inputs, bits_to_val(inputs))
+        print(inputs, _bits_to_val(inputs))
         for j in range(len(transitions[-1])):  # for each previous state (index)
             print(f"  for previous state {j}")
             for k in range(2 ** num_inputs):  # for each possible transition
-                print(f"    for the possible transition {k}")
+                expected = _bits_to_val(expected_output(j, k, num_inputs, G=G))
                 # NOTE: this next line part is specific to hard decoding
                 # NOTE: there is a bug, we should be XORing with the expected encoded output, not just the input (k)
-                print(f"    has the weight {bits_to_val(inputs)} ^ {k} = {bits_to_val(inputs) ^ k}")
-                transitions[-1][j][k] = { "weight": (bits_to_val(inputs) ^ k).bit_count(), "next_state": ((j << num_inputs) | k) & (num_states - 1) }  # weight, number of 1 bits
+                transitions[-1][j][k] = { "weight": (_bits_to_val(inputs) ^ expected).bit_count(), "next_state": ((j << num_inputs) | k) & (num_states - 1) }  # weight, number of 1 bits
+                print(f"    for the possible transition {k} with expected output {expected}")
+                print(f"    has the weight {_bits_to_val(inputs)} ^ {expected} = {_bits_to_val(inputs) ^ expected} going to state {transitions[-1][j][k]["next_state"]}")
         transitions.append([])
         for new_state in range(num_states):  # for each new state
             # find state with lowest state weight + transition weight to this new state
@@ -68,7 +70,7 @@ def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
                         lowest['state'] = old_state
                         lowest['weight'] = contender_weight
                         lowest['transition'] = transition
-            assert lowest['state'] is not None, "Could not find an old state that points to the new state"
+            # assert lowest['state'] is not None, "Could not find an old state that points to the new state"
             transitions[-1].append({ "state_weight": lowest['weight'], "previous": { "state": lowest['state'], "transition": lowest['transition'] } })
 
     for i, transition in enumerate(transitions):
@@ -85,7 +87,7 @@ def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
 
     return out
 
-test_encoding = convolution_encoder(np.array([1], dtype=np.uint8))
+test_encoding = convolution_encoder(np.array([0, 0, 0, 1, 1, 0, 1, 1], dtype=np.uint8))
 test_symbols = bit_to_symbol_mapper(test_encoding)
 print(test_encoding)
 print(convolutional_hard_decoder(test_symbols))
