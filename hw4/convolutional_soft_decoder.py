@@ -1,16 +1,7 @@
 import numpy as np
 
-from bit_to_symbol_mapper import bit_to_symbol_mapper, symbol_to_bit_mapper
+from bit_to_symbol_mapper import bit_to_symbol_mapper
 from convolutional_encoder import convolution_encoder
-
-def _bits_to_val(input: list[int]) -> int:
-    """
-    :param input: MSB is at the start
-    """
-    out = 0
-    for index, bit in enumerate(reversed(input)):
-        out += bit * int(2**index)
-    return int(out)
 
 def _expected_output(state: int, input: int, G: list[list[int]]=[[0o5, 0o7]]) -> np.ndarray:
     out = np.zeros_like(G[0], dtype=np.uint8)
@@ -20,7 +11,7 @@ def _expected_output(state: int, input: int, G: list[list[int]]=[[0o5, 0o7]]) ->
             out[j] = ((((state << 1) | ((input & (1 << i)) >> i))) & val).bit_count() & 1
     return out
 
-def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o7]]) -> np.ndarray:
+def convolutional_soft_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o7]]) -> np.ndarray:
     num_inputs = len(G)
     output_size = len(G[0])
     num_states = -1
@@ -31,26 +22,20 @@ def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
     num_states = 2 ** num_bits
     assert num_bits > 0, "G matrix malformed"
 
-    # convert to bits
-    bits = symbol_to_bit_mapper(symbols)
-    assert (len(bits) % num_inputs) == 0, "Number of received bits is not a multiple of the number of inputs"
-
     # initial state
     transitions = [[{ "state_weight": 0.0, "previous": None }]]
     for _ in range(1, num_states):
         transitions[0].append({ "state_weight": float('inf'), "previous": None })
 
     # for each input, calculate weights of previous states' transitions then find the weight of the current states
-    for i in range(len(symbols)):  # for each of the new inputs
+    for i, symbol in enumerate(symbols):  # for each of the new inputs
         # print(f"t = {i+1}")
-        inputs = np.array(bits[i*output_size:(i+1)*output_size])
-        # print(inputs, _bits_to_val(inputs))
         for j in range(len(transitions[-1])):  # for each previous state (index)
             # print(f"  for previous state {j}")
             for k in range(2 ** num_inputs):  # for each possible transition
-                # NOTE: this part is specific to hard decoding
-                expected = _bits_to_val(_expected_output(j, k, G=G))
-                transitions[-1][j][k] = { "weight": (_bits_to_val(inputs) ^ expected).bit_count(), "next_state": ((j << num_inputs) | k) & (num_states - 1) }  # weight, number of 1 bits
+                # NOTE: this part is specific to soft decoding
+                expected = bit_to_symbol_mapper(_expected_output(j, k, G=G))
+                transitions[-1][j][k] = { "weight": (symbol - expected).imag ** 2 + (symbol - expected).real ** 2, "next_state": ((j << num_inputs) | k) & (num_states - 1) }  # weight, number of 1 bits
                 # print(f"    for the possible transition {k} with expected output {expected}")
                 # print(f"    has the weight {_bits_to_val(inputs)} ^ {expected} = {_bits_to_val(inputs) ^ expected} going to state {transitions[-1][j][k]["next_state"]}")
         transitions.append([])
