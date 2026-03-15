@@ -44,7 +44,7 @@ symbol_size = 3
 snr = 100  # in dB
 
 # get image
-test_input = image_to_bits('./photos/test_checker.png') # to test, call this with 32 as a second parameter
+test_input = image_to_bits('./photos/test_checker.png', 32) # to test, call this with 32 as a second parameter
 print("Input image:", test_input)
 print("input image shape: ", np.shape(test_input))
 
@@ -62,8 +62,8 @@ signal = np.concatenate((np.zeros(r), transmitter_output, np.zeros(int(1e6 - len
 assert len(signal) == int(1e6), f"{len(signal)}"
 
 # add noise
-# noisy_output = truncate_add_noise_passband(signal, snr) # to test, use 2182 in the last parameter
-noisy_output = signal  # skip noise for testing
+noisy_output = truncate_add_noise_passband(signal, snr) # to test, use 2182 in the last parameter
+# noisy_output = signal  # skip noise for testing
 # print("Noisy signal:", noisy_output)
 
 print("preamble at: ", r)
