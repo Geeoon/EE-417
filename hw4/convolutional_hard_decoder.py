@@ -31,6 +31,15 @@ def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
     num_states = 2 ** num_bits
     assert num_bits > 0, "G matrix malformed"
 
+    # precompute expected outputs and next state
+    expected_output = np.zeros((num_states, 2**num_inputs), dtype=np.uint8)
+    next_states = np.zeros((num_states, 2**num_inputs), dtype=np.uint8)
+    for state in range(num_states):
+        for inp in range(2**num_inputs):
+            bits = _bits_to_val(_expected_output(state, inp, G=G))
+            expected_output[state, inp] = bits
+            next_states[state, inp] = ((state << num_inputs) | inp) & (num_states - 1)
+
     # convert to bits
     bits = symbol_to_bit_mapper(symbols)
     assert (len(bits) % num_inputs) == 0, "Number of received bits is not a multiple of the number of inputs"
@@ -49,10 +58,7 @@ def convolutional_hard_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
             # print(f"  for previous state {j}")
             for k in range(2 ** num_inputs):  # for each possible transition
                 # NOTE: this part is specific to hard decoding
-                expected = _bits_to_val(_expected_output(j, k, G=G))
-                transitions[-1][j][k] = { "weight": (_bits_to_val(inputs) ^ expected).bit_count(), "next_state": ((j << num_inputs) | k) & (num_states - 1) }  # weight, number of 1 bits
-                # print(f"    for the possible transition {k} with expected output {expected}")
-                # print(f"    has the weight {_bits_to_val(inputs)} ^ {expected} = {_bits_to_val(inputs) ^ expected} going to state {transitions[-1][j][k]["next_state"]}")
+                transitions[-1][j][k] = { "weight": (_bits_to_val(inputs) ^ expected_output[j, k]).bit_count(), "next_state": next_states[j, k] }  # weight, number of 1 bits
         transitions.append([])
         for new_state in range(num_states):  # for each new state
             # find state with lowest state weight + transition weight to this new state

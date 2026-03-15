@@ -36,6 +36,7 @@ def transmitter(input_signal: np.ndarray, preamble: np.ndarray = (1, 0, 1, 0, 1,
     # add length and x, y dimensions to front of message
     input_signal = np.concatenate([to_symbol(input_signal.shape[0], bits_per_symbol=bits_per_symbol),
                                    to_symbol(input_signal.shape[1], bits_per_symbol=bits_per_symbol),
+                                   to_symbol(0, bits_per_symbol=bits_per_symbol),  # add padding so we can decode the length before anything else
                                    input_signal.flatten()])
     input_signal = np.concatenate([preamble, input_signal])  # add preamble
     

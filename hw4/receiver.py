@@ -35,7 +35,7 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray) -> np.ndarray:
     :return: the reconstructed image
     :rtype: ndarray
     """
-    preamble_symbols = convolution_encoder(preamble)
+    preamble_symbols = convolution_encoder(preamble, pad_ending=False)
     # find preamble index
     # convolve signal
     convolved = np.correlate(recvd, preamble_symbols, mode='valid')
@@ -54,10 +54,10 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray) -> np.ndarray:
     print("preamble detected at: ", index)
 
     # hard decoder
-    out_hard = np.array(convolutional_hard_decoder(recvd[index:]))
+    out_hard = np.array(convolutional_hard_decoder(recvd[index:index+48]))
 
     # soft decoder
-    out_soft = np.array(convolutional_soft_decoder(recvd[index:]))
+    out_soft = np.array(convolutional_soft_decoder(recvd[index:index+48]))
 
     # check length of received values vs decoded values
     print("post-preamble received length: ", len(recvd[index:]))
@@ -76,6 +76,13 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray) -> np.ndarray:
 
     print("hard-decoded (x, y): ", x_hard, y_hard)
     print("soft-decoded (x, y): ", x_soft, y_soft)
+
+    # now do the entire thing
+    out_hard = np.array(convolutional_hard_decoder(recvd[index:index + len(preamble) + 48 + x_hard * y_hard + 2]))
+    out_soft = np.array(convolutional_soft_decoder(recvd[index:index + len(preamble) + 48 + x_soft * y_soft + 2]))
+    out_hard = out_hard[len(preamble) + 48:]
+    out_soft = out_soft[len(preamble) + 48:]
+
 
     # reshape the hard-decoded image to the transmitted dimensions
     if not (x_hard < 1 or y_hard < 1) or not (len(out_hard) < x_hard * y_hard):

@@ -22,6 +22,15 @@ def convolutional_soft_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
     num_states = 2 ** num_bits
     assert num_bits > 0, "G matrix malformed"
 
+    # precompute expected outputs and next state
+    expected_symbols = np.zeros((num_states, 2**num_inputs), dtype=complex)
+    next_states = np.zeros((num_states, 2**num_inputs), dtype=np.uint8)
+    for state in range(num_states):
+        for inp in range(2**num_inputs):
+            bits = _expected_output(state, inp, G=G)
+            expected_symbols[state, inp] = bit_to_symbol_mapper(bits).item()
+            next_states[state, inp] = ((state << num_inputs) | inp) & (num_states - 1)
+
     # initial state
     transitions = [[{ "state_weight": 0.0, "previous": None }]]
     for _ in range(1, num_states):
@@ -34,10 +43,7 @@ def convolutional_soft_decoder(symbols: np.ndarray, G: list[list[int]]=[[0o5, 0o
             # print(f"  for previous state {j}")
             for k in range(2 ** num_inputs):  # for each possible transition
                 # NOTE: this part is specific to soft decoding
-                expected = bit_to_symbol_mapper(_expected_output(j, k, G=G))
-                transitions[-1][j][k] = { "weight": (symbol - expected).imag ** 2 + (symbol - expected).real ** 2, "next_state": ((j << num_inputs) | k) & (num_states - 1) }  # weight, number of 1 bits
-                # print(f"    for the possible transition {k} with expected output {expected}")
-                # print(f"    has the weight {_bits_to_val(inputs)} ^ {expected} = {_bits_to_val(inputs) ^ expected} going to state {transitions[-1][j][k]["next_state"]}")
+                transitions[-1][j][k] = { "weight": (symbol - expected_symbols[j, k]).imag ** 2 + (symbol - expected_symbols[j, k]).real ** 2, "next_state": next_states[j, k] }  # weight, number of 1 bits
         transitions.append([])
         for new_state in range(num_states):  # for each new state
             # find state with lowest state weight + transition weight to this new state
