@@ -56,5 +56,5 @@ def transmitter(input_signal: np.ndarray, preamble: np.ndarray = (1, 0, 1, 0, 1,
     rest of bits are padded zero
     """
     print("input length: ", len(input_signal))
-    print("output length: ", len(out))
+    print("output length (+2 from len(in) due to padding): ", len(out))
     return out # cut off any extra values

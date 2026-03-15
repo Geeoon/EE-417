@@ -25,7 +25,7 @@ def convolution_encoder(input: np.ndarray, G: list[list[int]]=[[0o5, 0o7]], pad_
         for val in G:
             for g in val:
                 if pads < g.bit_length():
-                    pads = g.bit_length()
+                    pads = g.bit_length() - 1
         input = np.pad(input, (0, pads), 'constant')
 
     outputs = []  # to be xored together

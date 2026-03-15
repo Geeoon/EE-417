@@ -63,7 +63,7 @@ assert len(signal) == int(1e6), f"{len(signal)}"
 
 # add noise
 # noisy_output = truncate_add_noise_passband(signal, snr) # to test, use 2182 in the last parameter
-noisy_output = signal
+noisy_output = signal  # skip noise for testing
 # print("Noisy signal:", noisy_output)
 
 print("preamble at: ", r)

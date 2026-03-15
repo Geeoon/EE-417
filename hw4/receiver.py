@@ -36,22 +36,22 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray) -> np.ndarray:
     :rtype: ndarray
     """
     preamble_symbols = convolution_encoder(preamble)
-
     # find preamble index
     # convolve signal
     convolved = np.correlate(recvd, preamble_symbols, mode='valid')
     
     # find index of max
     # first occurance above 97.5% match with preamble, based on correlation
-    correlation = np.abs(np.sum(preamble_symbols ** 2))
-    indices = np.where(np.abs(convolved) > correlation * .975)[0]
+    preamble_symbols_energy = np.sum(np.abs(preamble_symbols) ** 2)
+    threshold = preamble_symbols_energy * 0.975
+    indices = np.where(np.abs(convolved) > threshold)[0]
     
     if len(indices) == 0:
-        index = np.argmax(convolved)
+        index = np.argmax(np.abs(convolved))
     else:
         index = indices[0]
 
-    print ("preamble detected at: ", index)
+    print("preamble detected at: ", index)
 
     # hard decoder
     out_hard = np.array(convolutional_hard_decoder(recvd[index:]))
