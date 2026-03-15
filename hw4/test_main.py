@@ -38,52 +38,55 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
     sym_err = np.sum(np.any(reshaped != 0, axis=1)) / len(reshaped)
     return bit_err, sym_err
 
-PREAMBLE = np.array((1, 0, 1, 0, 1, 1, 1, 1) * 4)
+PREAMBLE = np.array(1, 0, 1, 0, 1, 1, 1, 1)
 bits_per_symbol = 1
 symbol_size = 3
 snr = 100  # in dB
 
 # get image
-test_input = image_to_bits('./photos/monalisa_diff.png')
+test_input = image_to_bits('./photos/test_checker.png') # to test, call this with 32 as a second parameter
 print("Input image:", test_input)
+print("input image shape: ", np.shape(test_input))
 
 # transform image
 transmitter_output = transmitter(test_input, preamble=PREAMBLE, symbol_size=symbol_size, bits_per_symbol=bits_per_symbol)
-print("Transformer output:", transmitter_output)
-# add zeros before and after data
+# print("Transmitter output:", transmitter_output)
 
-r = round(np.random.rand() * (1e6 - len(transmitter_output)))
+# add zeros before and after data
+r = round(np.random.rand() * (1e6 - len(transmitter_output))) # to test, do not add this padding
 signal = np.concatenate((np.zeros(r), transmitter_output, np.zeros(int(1e6 - len(transmitter_output) - r))))
 
-print("Padded signal:", signal)
+# print("Padded signal:", signal)
 
 # make sure it's the right length
 assert len(signal) == int(1e6), f"{len(signal)}"
 
 # add noise
-noisy_output = truncate_add_noise_passband(signal, snr)
-print("Noisy signal:", noisy_output)
+noisy_output = truncate_add_noise_passband(signal, snr) # to test, use 2182 in the last parameter
+# print("Noisy signal:", noisy_output)
+
+print("preamble at: ", r)
 
 # receive signal
-received_hard, received_soft, index = receiver(noisy_output, preamble=PREAMBLE, bits_per_symbol=bits_per_symbol, symbol_size=symbol_size)
+received_hard, received_soft, index = receiver(noisy_output, preamble=PREAMBLE)
 
 if index != r:
     print("Preamble not identified correctly")
-if received_hard is None:
-    print("Unable to display hard-decoded image")
-if received_soft is None:
-    print("Unable to display soft-decoded image")    
-    
-print("Received hard-decoded:", received_hard)
-print("Received soft-decoded:", received_soft)
+
+print("hard decoded image shape: ", np.shape(received_hard))
+print("soft decoded image shape: ", np.shape(received_soft))
 
 plt.imshow(test_input, cmap='gray', vmin=0, vmax=1)
 plt.show()
 
-if received_hard is not None:
+if received_hard is None:
+    print("Unable to display hard-decoded image")
+else:
     plt.imshow(received_hard, cmap='gray', vmin=0, vmax=1)
     plt.show()
-    
-if received_soft is not None:
+
+if received_soft is None:
+    print("Unable to display soft-decoded image")
+else:
     plt.imshow(received_soft, cmap='gray', vmin=0, vmax=1)
     plt.show()

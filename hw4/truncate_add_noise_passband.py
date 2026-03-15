@@ -1,6 +1,6 @@
 import numpy as np
 
-def truncate_add_noise_passband(signal, SNR_dB):
+def truncate_add_noise_passband(signal, SNR_dB, length: int=1e6):
     """
     Python equivalent of the MATLAB function truncate_add_noise_passband.
 
@@ -22,7 +22,7 @@ def truncate_add_noise_passband(signal, SNR_dB):
     signal = signal / max_sgnl
 
     # Truncate to 1e6 samples
-    N = int(1e6)
+    N = int(length)
     signal = signal[:N]
 
     # Reference signal (complex ones)

@@ -32,7 +32,7 @@ def transmitter(input_signal: np.ndarray, preamble: np.ndarray = (1, 0, 1, 0, 1,
     assert symbol_size >= 1
     assert bits_per_symbol >= 1
     assert np.max(input_signal) == 1 or np.max(input_signal) == 0  # make sure it's a 1 bit stream
-    
+
     # add length and x, y dimensions to front of message
     input_signal = np.concatenate([to_symbol(input_signal.shape[0], bits_per_symbol=bits_per_symbol),
                                    to_symbol(input_signal.shape[1], bits_per_symbol=bits_per_symbol),
@@ -40,12 +40,13 @@ def transmitter(input_signal: np.ndarray, preamble: np.ndarray = (1, 0, 1, 0, 1,
     input_signal = np.concatenate([preamble, input_signal])  # add preamble
     
     assert len(input_signal) < int(4e5), "Image too large"
-    
+
     out = convolution_encoder(input_signal)
-    
-    # make sure the output is the right size
-    # assert len(out) >= 4e5, f"{len(out)} < 4e5"
-    
+
+    test = convolution_encoder(input_signal[0:40])
+    assert np.array_equal(test[16:48], out[16:48]), "incorrect x-value encoding"
+    assert np.array_equal(test[48:80], out[48:80]), "incorrect y-value encoding"
+
     """
     So the output looks as such
     bits start-0: preamble
@@ -54,4 +55,6 @@ def transmitter(input_signal: np.ndarray, preamble: np.ndarray = (1, 0, 1, 0, 1,
     bits 32-end: image data
     rest of bits are padded zero
     """
+    print("input length: ", len(input_signal))
+    print("output length: ", len(out))
     return out # cut off any extra values
