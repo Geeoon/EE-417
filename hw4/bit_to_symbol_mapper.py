@@ -12,6 +12,6 @@ def bit_to_symbol_mapper(bits: np.ndarray, d: float = 1) -> np.ndarray:
 
 def symbol_to_bit_mapper(symbols: np.ndarray, d: float = 1) -> np.ndarray:
     assert symbols.dtype == np.complex128, "symbols must be complex"
-    i_bits = (symbols.real + (d/2)).astype(int)
-    q_bits = (symbols.imag + (d/2)).astype(int)
+    i_bits = np.clip(np.round((symbols.real + (d/2)) / d), 0, 1).astype(np.uint8)
+    q_bits = np.clip(np.round((symbols.imag + (d/2)) / d), 0, 1).astype(np.uint8)
     return np.ravel(np.column_stack((i_bits, q_bits)))

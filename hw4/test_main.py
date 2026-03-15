@@ -41,7 +41,7 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
 PREAMBLE = np.array([1, 0, 1, 0, 1, 1, 1, 1])
 bits_per_symbol = 1
 symbol_size = 3
-snr = 100  # in dB
+snr = 10  # in dB
 
 # get image
 test_input = image_to_bits('./photos/test_checker.png', 32) # to test, call this with 32 as a second parameter
@@ -69,7 +69,7 @@ noisy_output = truncate_add_noise_passband(signal, snr) # to test, use 2182 in t
 print("preamble at: ", r)
 
 # receive signal
-received_hard, received_soft, index = receiver(noisy_output, preamble=PREAMBLE)
+received_hard, received_soft, index = receiver(noisy_output, preamble=PREAMBLE, expected_preamble_idx=r)
 
 if index != r:
     print("Preamble not identified correctly")

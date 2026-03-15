@@ -22,18 +22,16 @@ def bits_to_val(bits: np.ndarray) -> int:
         out |= int(bit)
     return out
 
-def receiver(recvd: np.ndarray, preamble: np.ndarray) -> np.ndarray:
+def receiver(recvd: np.ndarray, preamble: np.ndarray, expected_preamble_idx: int) -> np.ndarray:
     """
     converts a received signal to the raw data
     
     :param input: the received signal
-    :type input: np.ndarray
     :param preamble: the preamble to search for
-    :type preamble: np.ndarray
-    :type input: int
+    :param expected_preamble_idx: the expected preamble index
+    
 
     :return: the reconstructed image
-    :rtype: ndarray
     """
     preamble_symbols = convolution_encoder(preamble, pad_ending=False)
     # find preamble index
@@ -52,10 +50,12 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray) -> np.ndarray:
         index = indices[0]
 
     print("preamble detected at: ", index)
+    if index != expected_preamble_idx:
+        return None, None, index
 
     # hard decoder
     out_hard = np.array(convolutional_hard_decoder(recvd[index:index+48]))
-
+    print(out_hard)
     # soft decoder
     out_soft = np.array(convolutional_soft_decoder(recvd[index:index+48]))
 
