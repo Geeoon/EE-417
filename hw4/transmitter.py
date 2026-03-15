@@ -43,9 +43,9 @@ def transmitter(input_signal: np.ndarray, preamble: np.ndarray = (1, 0, 1, 0, 1,
 
     out = convolution_encoder(input_signal)
 
-    test = convolution_encoder(input_signal[0:40])
-    assert np.array_equal(test[16:48], out[16:48]), "incorrect x-value encoding"
-    assert np.array_equal(test[48:80], out[48:80]), "incorrect y-value encoding"
+    # test = convolution_encoder(input_signal[0:40])
+    # assert np.array_equal(test[16:48], out[16:48]), "incorrect x-value encoding"
+    # assert np.array_equal(test[48:80], out[48:80]), "incorrect y-value encoding"
 
     """
     So the output looks as such

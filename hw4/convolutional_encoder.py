@@ -1,4 +1,5 @@
 import numpy as np
+from bit_to_symbol_mapper import bit_to_symbol_mapper
 
 def _bits_to_val(input: list[int]) -> int:
     """
@@ -41,5 +42,4 @@ def convolution_encoder(input: np.ndarray, G: list[list[int]]=[[0o5, 0o7]], pad_
         for output in outputs:
             out[-1] = out[-1] + output[i]
         out[-1] %= 2
-    
-    return np.array(out)
+    return bit_to_symbol_mapper(np.array(out, dtype=np.uint8))

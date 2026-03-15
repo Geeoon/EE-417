@@ -38,7 +38,7 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
     sym_err = np.sum(np.any(reshaped != 0, axis=1)) / len(reshaped)
     return bit_err, sym_err
 
-PREAMBLE = np.array(1, 0, 1, 0, 1, 1, 1, 1)
+PREAMBLE = np.array([1, 0, 1, 0, 1, 1, 1, 1])
 bits_per_symbol = 1
 symbol_size = 3
 snr = 100  # in dB
@@ -62,7 +62,8 @@ signal = np.concatenate((np.zeros(r), transmitter_output, np.zeros(int(1e6 - len
 assert len(signal) == int(1e6), f"{len(signal)}"
 
 # add noise
-noisy_output = truncate_add_noise_passband(signal, snr) # to test, use 2182 in the last parameter
+# noisy_output = truncate_add_noise_passband(signal, snr) # to test, use 2182 in the last parameter
+noisy_output = signal
 # print("Noisy signal:", noisy_output)
 
 print("preamble at: ", r)

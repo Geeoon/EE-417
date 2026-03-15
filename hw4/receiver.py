@@ -65,14 +65,14 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray) -> np.ndarray:
     print("post-preamble soft-decoded length: ", len(out_soft))
 
     # parse x and y hard
-    x_hard = bits_to_val(out_hard[:16])
-    y_hard = bits_to_val(out_hard[16:32])
-    out_hard = out_hard[32:]
+    x_hard = bits_to_val(out_hard[len(preamble):len(preamble)+16])
+    y_hard = bits_to_val(out_hard[len(preamble)+16:len(preamble)+32])
+    out_hard = out_hard[len(preamble)+32:]
     
     # parse x and y soft
-    x_soft = bits_to_val(out_soft[:16])
-    y_soft = bits_to_val(out_soft[16:32])
-    out_soft = out_soft[32:]
+    x_soft = bits_to_val(out_soft[len(preamble):len(preamble)+16])
+    y_soft = bits_to_val(out_soft[len(preamble)+16:len(preamble)+32])
+    out_soft = out_soft[len(preamble)+32:]
 
     print("hard-decoded (x, y): ", x_hard, y_hard)
     print("soft-decoded (x, y): ", x_soft, y_soft)
