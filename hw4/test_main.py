@@ -44,7 +44,7 @@ symbol_size = 3
 snr = 20  # in dB
 
 # get image
-test_input = image_to_bits('./photos/monalisa_diff.png', 30)
+test_input = image_to_bits('./photos/monalisa_diff.png', 250)
 print("Input image:", test_input)
 print("input image shape: ", np.shape(test_input))
 
@@ -112,25 +112,41 @@ half_len = img_length / 2
 flat_half  = np.split(flat_input, half_len)
 
 for snr in snrs:
-    noisy_signal = truncate_add_noise_passband(transmitter_output, snr, len(transmitter_output))
-    received_hard, received_soft, _, _, _ = receiver(noisy_signal, preamble = PREAMBLE, expected_preamble_idx = 0)
-
-    received_hard = received_hard[:-2]
-    received_soft = received_soft[:-2]
-
-    # automatically count missed inputs as errors
-    if len(received_hard) != len(flat_input):
-        received_hard = np.concatenate([received_hard, flat_input[len(received_hard):] ^ 1])
-    if len(received_soft) != len(flat_input):
-        received_soft = np.concatenate([received_soft, flat_input[len(received_soft):] ^ 1])
-
+    trials = 0
+    hard_errors_collected = 0
+    soft_errors_collected = 0
     curr = snr // 2
+    while hard_errors_collected < 50 or soft_errors_collected < 50:
+        trials += 1
+        noisy_signal = truncate_add_noise_passband(transmitter_output, snr, len(transmitter_output))
+        received_hard, received_soft, _, _, _ = receiver(noisy_signal, preamble = PREAMBLE, expected_preamble_idx = 0)
 
-    hard_ber[curr] = np.sum(flat_input != received_hard) / img_length
-    soft_ber[curr] = np.sum(flat_input != received_soft) / img_length
+        received_hard = received_hard[:-2]
+        received_soft = received_soft[:-2]
 
-    hard_pe[curr] = np.sum(np.any(np.array(flat_half) != np.array(np.split(received_hard, half_len)), axis=1)) / half_len
-    soft_pe[curr] = np.sum(np.any(np.array(flat_half) != np.array(np.split(received_soft, half_len)), axis=1)) / half_len
+        # automatically count missed inputs as errors
+        if len(received_hard) != len(flat_input):
+            received_hard = np.concatenate([received_hard, flat_input[len(received_hard):] ^ 1])
+        if len(received_soft) != len(flat_input):
+            received_soft = np.concatenate([received_soft, flat_input[len(received_soft):] ^ 1])
+
+        hard_bit_error_count = np.sum(flat_input != received_hard)
+        soft_bit_error_count = np.sum(flat_input != received_soft)
+
+        hard_errors_collected += hard_bit_error_count
+        soft_errors_collected += soft_bit_error_count
+
+
+        hard_ber[curr] += hard_bit_error_count / img_length
+        soft_ber[curr] += hard_bit_error_count / img_length
+
+        hard_pe[curr] += np.sum(np.any(np.array(flat_half) != np.array(np.split(received_hard, half_len)), axis=1)) / half_len
+        soft_pe[curr] += np.sum(np.any(np.array(flat_half) != np.array(np.split(received_soft, half_len)), axis=1)) / half_len
+
+    hard_ber[curr] /= trials
+    soft_ber[curr] /= trials
+    hard_pe[curr] /= trials
+    soft_pe[curr] /= trials
 
     print("SNR =", snr)
     print("hard BER =", hard_ber[curr])
