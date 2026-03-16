@@ -120,17 +120,17 @@ for snr in snrs:
 
     curr = snr // 2
 
-    hard_ber[curr] = np.sum(flat_input != received_hard)
-    soft_ber[curr] = np.sum(flat_input != received_soft)
+    hard_ber[curr] = np.sum(flat_input != received_hard) / img_length
+    soft_ber[curr] = np.sum(flat_input != received_soft) / img_length
 
-    hard_pe[curr] = np.sum(np.not_equal(flat_half, np.split(received_hard, half_len)))
-    soft_pe[curr] = np.sum(np.not_equal(flat_half, np.split(received_soft, half_len)))
+    hard_pe[curr] = np.sum(np.not_equal(flat_half, np.split(received_hard, half_len))) / half_len
+    soft_pe[curr] = np.sum(np.not_equal(flat_half, np.split(received_soft, half_len))) / half_len
 
     print("SNR =", snr)
-    print("hard BER =", hard_ber[curr] / img_length)
-    print("soft BER =", soft_ber[curr] / img_length)
-    print("hard PE =", hard_pe[curr] / img_length)
-    print("soft PE =", soft_pe[curr] / img_length)
+    print("hard BER =", hard_ber[curr])
+    print("soft BER =", soft_ber[curr])
+    print("hard PE =", hard_pe[curr])
+    print("soft PE =", soft_pe[curr])
 
 plt.semilogy(snrs, hard_ber, label = "hard decoding BER", color = 'red', ls = 'solid')
 plt.semilogy(snrs, soft_ber, label = "soft decoding BER", color = 'green', ls = 'solid')
