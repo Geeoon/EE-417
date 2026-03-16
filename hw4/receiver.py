@@ -49,20 +49,19 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, expected_preamble_idx: int
     else:
         index = indices[0]
 
-    print("preamble detected at: ", index)
+    # print("preamble detected at: ", index)
     if index != expected_preamble_idx:
-        return None, None, index
+        return None, None, index, None, None
 
     # hard decoder
     out_hard = np.array(convolutional_hard_decoder(recvd[index:index+len(preamble)+48]))
-    print(out_hard)
     # soft decoder
     out_soft = np.array(convolutional_soft_decoder(recvd[index:index+len(preamble)+48]))
 
     # check length of received values vs decoded values
-    print("post-preamble received length: ", len(recvd[index:]))
-    print("post-preamble hard-decoded length: ", len(out_hard))
-    print("post-preamble soft-decoded length: ", len(out_soft))
+    # print("post-preamble received length: ", len(recvd[index:]))
+    # print("post-preamble hard-decoded length: ", len(out_hard))
+    # print("post-preamble soft-decoded length: ", len(out_soft))
 
     # parse x and y hard
     x_hard = bits_to_val(out_hard[len(preamble):len(preamble)+16])
@@ -74,8 +73,8 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, expected_preamble_idx: int
     y_soft = bits_to_val(out_soft[len(preamble)+16:len(preamble)+32])
     out_soft = out_soft[len(preamble)+32:]
 
-    print("hard-decoded (x, y): ", x_hard, y_hard)
-    print("soft-decoded (x, y): ", x_soft, y_soft)
+    # print("hard-decoded (x, y): ", x_hard, y_hard)
+    # print("soft-decoded (x, y): ", x_soft, y_soft)
 
     # now do the entire thing
     out_hard = np.array(convolutional_hard_decoder(recvd[index:index + len(preamble) + 48 + x_hard * y_hard + 2]))
@@ -83,15 +82,4 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, expected_preamble_idx: int
     out_hard = out_hard[len(preamble) + 48:]
     out_soft = out_soft[len(preamble) + 48:]
 
-
-    # reshape the hard-decoded image to the transmitted dimensions
-    if not (x_hard < 1 or y_hard < 1) or not (len(out_hard) < x_hard * y_hard):
-        out_hard = out_hard[:x_hard * y_hard].astype(np.uint8)
-        out_hard = np.reshape(out_hard, (x_hard, y_hard))
-
-    # reshape the soft-decoded image to the transmitted dimensions
-    if not (x_soft < 1 or y_soft < 1) or not (len(out_soft) < x_soft * y_soft):
-        out_soft = out_soft[:x_soft * y_soft].astype(np.uint8)
-        out_soft = np.reshape(out_soft, (x_soft, y_soft))
-
-    return out_hard, out_soft, index
+    return out_hard, out_soft, index, (x_hard, y_hard), (x_soft, y_soft)

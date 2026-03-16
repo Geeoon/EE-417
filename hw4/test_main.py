@@ -41,10 +41,10 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
 PREAMBLE = np.array([1, 0, 1, 0, 1, 1, 1, 1]*8)
 bits_per_symbol = 1
 symbol_size = 3
-snr = 0  # in dB
+snr = 10  # in dB
 
 # get image
-test_input = image_to_bits('./photos/test_checker.png', 32) # to test, call this with 32 as a second parameter
+test_input = image_to_bits('./photos/monalisa_diff.png', 150)
 print("Input image:", test_input)
 print("input image shape: ", np.shape(test_input))
 
@@ -52,42 +52,93 @@ print("input image shape: ", np.shape(test_input))
 transmitter_output = transmitter(test_input, preamble=PREAMBLE, symbol_size=symbol_size, bits_per_symbol=bits_per_symbol)
 # print("Transmitter output:", transmitter_output)
 
-# add zeros before and after data
-r = round(np.random.rand() * (1e6 - len(transmitter_output))) # to test, do not add this padding
-signal = np.concatenate((np.zeros(r), transmitter_output, np.zeros(int(1e6 - len(transmitter_output) - r))))
+if True:
+    # add zeros before and after data
+    r = round(np.random.rand() * (1e6 - len(transmitter_output)))
+    signal = np.concatenate((np.zeros(r), transmitter_output, np.zeros(int(1e6 - len(transmitter_output) - r))))
 
-# print("Padded signal:", signal)
+    # print("Padded signal:", signal)
 
-# make sure it's the right length
-assert len(signal) == int(1e6), f"{len(signal)}"
+    # make sure it's the right length
+    assert len(signal) == int(1e6), f"{len(signal)}"
 
-# add noise
-noisy_output = truncate_add_noise_passband(signal, snr) # to test, use 2182 in the last parameter
-# noisy_output = signal  # skip noise for testing
-# print("Noisy signal:", noisy_output)
+    # add noise
+    noisy_output = truncate_add_noise_passband(signal, snr)
+    # noisy_output = signal  # skip noise for testing
+    # print("Noisy signal:", noisy_output)
 
-print("preamble at: ", r)
+    print("preamble at: ", r)
 
-# receive signal
-received_hard, received_soft, index = receiver(noisy_output, preamble=PREAMBLE, expected_preamble_idx=r)
+    # receive signal
+    received_hard, received_soft, index, hard_dims, soft_dims = receiver(noisy_output, preamble=PREAMBLE, expected_preamble_idx=r)
 
-if index != r:
-    print("Preamble not identified correctly")
+    if index != r:
+        print("Preamble not identified correctly")
 
-print("hard decoded image shape: ", np.shape(received_hard))
-print("soft decoded image shape: ", np.shape(received_soft))
+    # print("hard decoded image shape: ", np.shape(received_hard))
+    # print("soft decoded image shape: ", np.shape(received_soft))
 
-plt.imshow(test_input, cmap='gray', vmin=0, vmax=1)
+    plt.title("original image")
+    plt.imshow(test_input, cmap='gray', vmin=0, vmax=1)
+    plt.show()
+
+    if received_hard is None:
+        print("Unable to display hard-decoded image")
+    else:
+        plt.title("hard decoding image")
+        plt.imshow(np.reshape(received_hard[:-2], hard_dims), cmap='gray', vmin=0, vmax=1)
+        plt.show()
+
+    if received_soft is None:
+        print("Unable to display soft-decoded image")
+    else:
+        plt.title("soft decoding image")
+        plt.imshow(np.reshape(received_soft[:-2], soft_dims), cmap='gray', vmin=0, vmax=1)
+        plt.show()
+
+print("\n### NOW CALCULATING BER ###\n")
+
+snrs = [i * 2 for i in range(0, 16)]
+hard_ber = [0] * 16
+hard_pe  = [0] * 16
+
+soft_ber = [0] * 16
+soft_pe  = [0] * 16
+
+flat_input = np.ravel(test_input)
+img_length = len(flat_input)
+
+half_len = img_length / 2
+flat_half  = np.split(flat_input, half_len)
+
+for snr in snrs:
+    noisy_signal = truncate_add_noise_passband(transmitter_output, snr, len(transmitter_output))
+    received_hard, received_soft, _, _, _ = receiver(noisy_signal, preamble = PREAMBLE, expected_preamble_idx = 0)
+
+    received_hard = received_hard[:-2]
+    received_soft = received_soft[:-2]
+
+    curr = snr // 2
+
+    hard_ber[curr] = np.sum(flat_input != received_hard)
+    soft_ber[curr] = np.sum(flat_input != received_soft)
+
+    hard_pe[curr] = np.sum(np.not_equal(flat_half, np.split(received_hard, half_len)))
+    soft_pe[curr] = np.sum(np.not_equal(flat_half, np.split(received_soft, half_len)))
+
+    print("SNR =", snr)
+    print("hard BER =", hard_ber[curr] / img_length)
+    print("soft BER =", soft_ber[curr] / img_length)
+    print("hard PE =", hard_pe[curr] / img_length)
+    print("soft PE =", soft_pe[curr] / img_length)
+
+plt.semilogy(snrs, hard_ber, label = "hard decoding BER", color = 'red', ls = 'solid')
+plt.semilogy(snrs, soft_ber, label = "soft decoding BER", color = 'green', ls = 'solid')
+plt.semilogy(snrs, hard_pe, label = "hard decoding Pe", color = 'orange', ls = 'dashed')
+plt.semilogy(snrs, soft_pe, label = "soft decoding Pe", color = 'blue', ls = 'dashed')
+plt.title("hard vs soft decoding BER @ SNR between 0 and 30 dB")
+plt.xlabel("SNR (dB)")
+plt.ylabel("BER")
+plt.legend()
 plt.show()
 
-if received_hard is None:
-    print("Unable to display hard-decoded image")
-else:
-    plt.imshow(received_hard, cmap='gray', vmin=0, vmax=1)
-    plt.show()
-
-if received_soft is None:
-    print("Unable to display soft-decoded image")
-else:
-    plt.imshow(received_soft, cmap='gray', vmin=0, vmax=1)
-    plt.show()
