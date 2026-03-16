@@ -117,8 +117,8 @@ for snr in snrs:
     soft_errors_collected = 0
     curr = snr // 2
     # NOTE: was originally this line below, but it took several hours to get to 12 SNR, so we changed it
-    # while hard_errors_collected < 50 or soft_errors_collected < 50:
-    while hard_errors_collected < 1:
+    while (hard_errors_collected < 50 or soft_errors_collected < 50) and trials < 10:
+    # while hard_errors_collected < 1 and soft_errors_collected < 1:
         trials += 1
         noisy_signal = truncate_add_noise_passband(transmitter_output, snr, len(transmitter_output))
         received_hard, received_soft, _, _, _ = receiver(noisy_signal, preamble = PREAMBLE, expected_preamble_idx = 0)
@@ -150,18 +150,18 @@ for snr in snrs:
     soft_pe[curr] /= trials
 
     print("SNR =", snr)
-    print("hard BER =", hard_ber[curr])
-    print("soft BER =", soft_ber[curr])
-    print("hard PE =", hard_pe[curr])
-    print("soft PE =", soft_pe[curr])
+    print("Hard BER =", hard_ber[curr])
+    print("Soft BER =", soft_ber[curr])
+    print("Hard PE =", hard_pe[curr])
+    print("Soft PE =", soft_pe[curr])
 
 plt.semilogy(snrs, hard_ber, label = "hard decoding BER", color = 'red', ls = 'solid')
 plt.semilogy(snrs, soft_ber, label = "soft decoding BER", color = 'green', ls = 'solid')
 plt.semilogy(snrs, hard_pe, label = "hard decoding Pe", color = 'orange', ls = 'dashed')
 plt.semilogy(snrs, soft_pe, label = "soft decoding Pe", color = 'blue', ls = 'dashed')
-plt.title("hard vs soft decoding BER @ SNR between 0 and 30 dB")
+plt.title("Hard vs. Soft Decoding Error Rates @ SNR between 0 and 30 dB")
 plt.xlabel("SNR (dB)")
-plt.ylabel("BER")
+plt.ylabel("Error Rate")
 plt.legend()
 plt.show()
 
