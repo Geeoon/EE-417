@@ -44,7 +44,7 @@ symbol_size = 3
 snr = 20  # in dB
 
 # get image
-test_input = image_to_bits('./photos/monalisa_diff.png', 250)
+test_input = image_to_bits('./photos/monalisa_diff.png', 300)
 print("Input image:", test_input)
 print("input image shape: ", np.shape(test_input))
 
@@ -116,7 +116,9 @@ for snr in snrs:
     hard_errors_collected = 0
     soft_errors_collected = 0
     curr = snr // 2
-    while hard_errors_collected < 50 or soft_errors_collected < 50:
+    # NOTE: was originally this line below, but it took several hours to get to 12 SNR, so we changed it
+    # while hard_errors_collected < 50 or soft_errors_collected < 50:
+    while hard_errors_collected < 1:
         trials += 1
         noisy_signal = truncate_add_noise_passband(transmitter_output, snr, len(transmitter_output))
         received_hard, received_soft, _, _, _ = receiver(noisy_signal, preamble = PREAMBLE, expected_preamble_idx = 0)
@@ -136,9 +138,8 @@ for snr in snrs:
         hard_errors_collected += hard_bit_error_count
         soft_errors_collected += soft_bit_error_count
 
-
         hard_ber[curr] += hard_bit_error_count / img_length
-        soft_ber[curr] += hard_bit_error_count / img_length
+        soft_ber[curr] += soft_bit_error_count / img_length
 
         hard_pe[curr] += np.sum(np.any(np.array(flat_half) != np.array(np.split(received_hard, half_len)), axis=1)) / half_len
         soft_pe[curr] += np.sum(np.any(np.array(flat_half) != np.array(np.split(received_soft, half_len)), axis=1)) / half_len
