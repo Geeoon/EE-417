@@ -38,6 +38,16 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
     sym_err = np.sum(np.any(reshaped != 0, axis=1)) / len(reshaped)
     return bit_err, sym_err
 
+def db_to_val(snr):
+    # convert dB to linear
+    return 10 ** (snr / 10)
+
+def P_e(snr, M, gamma):
+    N_e = 4 * (1 - 1/(np.sqrt(M)))
+    return N_e * q_function(np.sqrt((3 * snr * gamma) / (M-1)))
+
+M = 4
+gamma = 5
 PREAMBLE = np.array([1, 0, 1, 0, 1, 1, 1, 1]*8)
 bits_per_symbol = 1
 symbol_size = 3
@@ -111,14 +121,13 @@ img_length = len(flat_input)
 half_len = img_length / 2
 flat_half  = np.split(flat_input, half_len)
 
+# simulation
 for snr in snrs:
     trials = 0
     hard_errors_collected = 0
     soft_errors_collected = 0
     curr = snr // 2
-    # NOTE: was originally this line below, but it took several hours to get to 12 SNR, so we changed it
-    while (hard_errors_collected < 50 or soft_errors_collected < 50) and trials < 10:
-    # while hard_errors_collected < 1 and soft_errors_collected < 1:
+    while hard_errors_collected < 50 and soft_errors_collected < 50:
         trials += 1
         noisy_signal = truncate_add_noise_passband(transmitter_output, snr, len(transmitter_output))
         received_hard, received_soft, _, _, _ = receiver(noisy_signal, preamble = PREAMBLE, expected_preamble_idx = 0)
@@ -155,13 +164,29 @@ for snr in snrs:
     print("Hard PE =", hard_pe[curr])
     print("Soft PE =", soft_pe[curr])
 
-plt.semilogy(snrs, hard_ber, label = "hard decoding BER", color = 'red', ls = 'solid')
-plt.semilogy(snrs, soft_ber, label = "soft decoding BER", color = 'green', ls = 'solid')
-plt.semilogy(snrs, hard_pe, label = "hard decoding Pe", color = 'orange', ls = 'dashed')
-plt.semilogy(snrs, soft_pe, label = "soft decoding Pe", color = 'blue', ls = 'dashed')
+plt.semilogy(snrs, hard_ber, label = "Hard Decoding BER", color = 'red', ls = 'solid')
+plt.semilogy(snrs, soft_ber, label = "Soft Decoding BER", color = 'green', ls = 'solid')
+plt.semilogy(snrs, hard_pe, label = "Hard Decoding $P_e$", color = 'orange', ls = 'dashed')
+plt.semilogy(snrs, soft_pe, label = "Soft Decoding $P_e$", color = 'blue', ls = 'dashed')
 plt.title("Hard vs. Soft Decoding Error Rates @ SNR between 0 and 30 dB")
 plt.xlabel("SNR (dB)")
 plt.ylabel("Error Rate")
 plt.legend()
 plt.show()
 
+# expected P_e
+plt.semilogy(snrs, [P_e(db_to_val(snr), M, gamma) for snr in snrs], label = "Expected $P_e$", color = 'red', ls = 'solid')
+plt.title(f"SNR (dB) vs. $P_e$ for {M}-QAM with Coding Gain of {gamma}")
+plt.xlabel("SNR (dB)")
+plt.ylabel("Error Rate")
+plt.legend()
+plt.show()
+
+"""
+# Quantitative Analysis
+The empirical results we got from the simulation are different from the expected results for 4-QAM with a coding gain of 5 (derived from our G matrix).  Although this they differ, it is to be expected.  The expected results are just the upper bound on the error rates.  So our empirical results being lower makes sense.
+
+Between the soft and hard decoding, we can see that soft decoding has much lower error rate the hard decoding.  This also makes sense because soft decoding takes into account the actual symbols rather than collapsing the information into two bits.
+
+Between hard and soft decoding, we observe an SNR difference of about dB.
+"""
