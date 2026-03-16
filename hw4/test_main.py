@@ -118,13 +118,19 @@ for snr in snrs:
     received_hard = received_hard[:-2]
     received_soft = received_soft[:-2]
 
+    # automatically count missed inputs as errors
+    if len(received_hard) != len(flat_input):
+        received_hard = np.concatenate([received_hard, flat_input[len(received_hard):] ^ 1])
+    if len(received_soft) != len(flat_input):
+        received_soft = np.concatenate([received_soft, flat_input[len(received_soft):] ^ 1])
+
     curr = snr // 2
 
     hard_ber[curr] = np.sum(flat_input != received_hard) / img_length
     soft_ber[curr] = np.sum(flat_input != received_soft) / img_length
 
-    hard_pe[curr] = np.sum(np.not_equal(flat_half, np.split(received_hard, half_len))) / half_len
-    soft_pe[curr] = np.sum(np.not_equal(flat_half, np.split(received_soft, half_len))) / half_len
+    hard_pe[curr] = np.sum(np.any(np.array(flat_half) != np.array(np.split(received_hard, half_len)), axis=1)) / half_len
+    soft_pe[curr] = np.sum(np.any(np.array(flat_half) != np.array(np.split(received_soft, half_len)), axis=1)) / half_len
 
     print("SNR =", snr)
     print("hard BER =", hard_ber[curr])
