@@ -54,10 +54,10 @@ def receiver(recvd: np.ndarray, preamble: np.ndarray, expected_preamble_idx: int
         return None, None, index
 
     # hard decoder
-    out_hard = np.array(convolutional_hard_decoder(recvd[index:index+48]))
+    out_hard = np.array(convolutional_hard_decoder(recvd[index:index+len(preamble)+48]))
     print(out_hard)
     # soft decoder
-    out_soft = np.array(convolutional_soft_decoder(recvd[index:index+48]))
+    out_soft = np.array(convolutional_soft_decoder(recvd[index:index+len(preamble)+48]))
 
     # check length of received values vs decoded values
     print("post-preamble received length: ", len(recvd[index:]))

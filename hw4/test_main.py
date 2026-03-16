@@ -38,10 +38,10 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
     sym_err = np.sum(np.any(reshaped != 0, axis=1)) / len(reshaped)
     return bit_err, sym_err
 
-PREAMBLE = np.array([1, 0, 1, 0, 1, 1, 1, 1])
+PREAMBLE = np.array([1, 0, 1, 0, 1, 1, 1, 1]*8)
 bits_per_symbol = 1
 symbol_size = 3
-snr = 10  # in dB
+snr = 0  # in dB
 
 # get image
 test_input = image_to_bits('./photos/test_checker.png', 32) # to test, call this with 32 as a second parameter
