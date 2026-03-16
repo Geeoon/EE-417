@@ -41,7 +41,7 @@ def calculate_error_rate(arr1: np.ndarray, arr2: np.ndarray, bits_per_symbol: in
 PREAMBLE = np.array([1, 0, 1, 0, 1, 1, 1, 1]*8)
 bits_per_symbol = 1
 symbol_size = 3
-snr = 10  # in dB
+snr = 20  # in dB
 
 # get image
 test_input = image_to_bits('./photos/monalisa_diff.png', 150)
