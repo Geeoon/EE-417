@@ -44,7 +44,7 @@ symbol_size = 3
 snr = 20  # in dB
 
 # get image
-test_input = image_to_bits('./photos/monalisa_diff.png', 150)
+test_input = image_to_bits('./photos/monalisa_diff.png', 30)
 print("Input image:", test_input)
 print("input image shape: ", np.shape(test_input))
 
